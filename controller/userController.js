@@ -12,12 +12,12 @@ const signUp = async (req, res) => {
 		user = user.rows[0];
 
 		if (user) {
-			return res.status(400).json({ message: "username already exists" });
+			return res.status(400).json({ message: "username already exists exists" });
 		}
 
 		const response = await createUserDb(username, password, role);
 		if (!response) {
-			return res.status(500).json({ message: "Failed to create user" });
+			return res.status(500).json({ message: 'Failed to create user' });
 		}
 
 		user = await getUser(username);
@@ -27,10 +27,10 @@ const signUp = async (req, res) => {
 			username: user.username,
 			password: user.password
 		};
-		res.status(200).json({ message: "User created successfully", data });
+		res.status(200).json({ message: 'User created successfully', data });
 	} catch (error) {
-		console.log("Error while Creating user: ", error);
-		res.status(500).json({ message: "Error while Creating user" });
+		console.log('Error while Creating user: ', error);
+		res.status(500).json({ message: 'Error while Creating user' });
 	}
 };
 
@@ -38,19 +38,19 @@ const login = async (req, res) => {
 	const { username, password } = req.body;
 	try {
 		if (!username || !password) {
-			return res.status(400).json({ message: "username and password is required!" });
+			return res.status(400).json({ message: 'username and password is required!' });
 		}
 
 		let user = await getUser(username);
 
 		if (!user) {
-			return res.status(400).json({ message: "username doesn't exist" });
+			return res.status(400).json({ message: "username doesn't exists" });
 		}
 		user = user.rows[0];
 
 		const verifyPassword = (user.password == password);
 		if (!verifyPassword) {
-			return res.status(400).json({ message: "Invalid Credentials!" });
+			return res.status(400).json({ message: 'Invalid Credientials!' });
 		}
 
 		const data = {
@@ -58,10 +58,10 @@ const login = async (req, res) => {
 			role: user.role
 		};
 
-		res.status(200).json({ message: "Login successful", data });
+		res.status(200).json(data);
 	} catch (error) {
-		console.log("Error while logging: ", error);
-		res.status(500).json({ message: "Error while logging" });
+		console.log('Error while logging: ', error);
+		res.status(500).json({ message: 'Error while logging' });
 	}
 };
 
@@ -69,19 +69,19 @@ const getUserByRole = async (req, res) => {
 	const role = req.params.role;
 	try {
 		if (!role) {
-			return res.status(400).json({ message: "Role field is required" });
+			return res.status(500).json({ message: 'Role field is required' });
 		}
 
 		let response = await getUserByRoleDb(role);
 		if (!response) {
-			return res.status(500).json({ message: "Unable to fetch user with this role" });
+			return res.status(500).json({ message: 'Unable to fetch user with this role' });
 		}
 
 		response = response.rows;
-		return res.status(200).json({ message: "Users fetched successfully", data: response });
+		return res.status(200).json(response);
 	} catch (error) {
-		console.log("Error in fetching user by role: ", error);
-		res.status(500).json({ message: "Error in fetching user by role" });
+		console.log('Error in fetching user by role: ', error);
+		res.status(500).json({ message: 'Error in fetching user by role' });
 	}
 };
 
@@ -91,18 +91,18 @@ const createAudit = async (req, res) => {
 		let isAudit = await getAuditForMachineDb(machine_id);
 		isAudit = isAudit?.rows[0];
 		if (isAudit) {
-			return res.status(200).json({ message: "Audit already exists for the machine" });
+			return res.status(200).json({ message: 'Audit already exists for the machine' });
 		}
 
 		const response = await createAuditDb(machine_id, assigned_to, assigned_by);
 		if (!response) {
-			return res.status(500).json({ message: "Unable to create audit" });
+			return res.status(500).json({ message: 'Unable to create audit' });
 		}
 
-		return res.status(200).json({ message: "Audit created successfully" });
+		return res.status(200).json({ message: 'Audit created successfully' });
 	} catch (error) {
-		console.log("Error in creating audit: ", error);
-		res.status(500).json({ message: "Error in creating audit" });
+		console.log('Error in creating audit: ', error);
+		res.status(500).json({ message: 'Error in creating audit' });
 	}
 };
 
@@ -111,14 +111,14 @@ const getAudit = async (req, res) => {
 	try {
 		let response = await getAuditForUserDb(username);
 		if (!response) {
-			return res.status(200).json({ message: "No audits available for the user" });
+			return res.status(200).json({ message: 'No audits availabe for the user' });
 		}
 
 		response = response.rows;
-		return res.status(200).json({ message: "Audits fetched successfully", data: response });
+		return res.status(200).json(response);
 	} catch (error) {
-		console.log("Error in fetching audit of the user: ", error);
-		res.status(500).json({ message: "Error in fetching audit of the user" });
+		console.log('Error in fetching audit of the user: ', error);
+		res.status(500).json({ message: 'Error in fetching audit of the user' });
 	}
 };
 
