@@ -1,19 +1,21 @@
 import express from 'express'
-import { login, getUserByRole, createAudit } from '../controller/userController.js';
-import {getAllMachine, getAllMachineWithAuditDues} from '../controller/machineController.js'
+import { login, signUp, getUserByRole, createAudit, getAudit} from '../controller/userController.js';
+import {getAllMachine, updateStatus , setAnalysisData} from '../controller/machineController.js'
 const router = express.Router();
-
 
 // user routes
 
+router.post('/api/signUp', signUp);
 router.post('/api/login', login);
-router.get('/api/user/:role', getUserByRole);
+router.post('/api/user/:role', getUserByRole); // change to get
 router.post('/api/createAudit', createAudit);
-
+router.post('/api/getAudit/:username', getAudit) // change to get 
 
 // machine controller
 
-router.get('/api/machines', getAllMachine);
-router.get('/api/machinesDue', getAllMachineWithAuditDues);
+router.post('/api/machines', getAllMachine); // change to get
+router.put('/api/updateStatus', updateStatus);
+router.post('/api/setAnalysis', setAnalysisData) 
 
-export default router
+
+export default router;

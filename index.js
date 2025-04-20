@@ -1,8 +1,11 @@
 import express from 'express'
 import appRouter from './routes/routes.js'
+import cors from 'cors'
 
 const app = express();
 const port = 3000
+
+app.use(cors());
 
 // middleware to get json data and we can also set the limit
 app.use(express.json({ limit: "16kb" }));
