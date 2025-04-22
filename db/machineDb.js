@@ -16,7 +16,7 @@ const getAllMachineWithAuditDuesDb = async function () {
     return await pool.query(query);
 }
     
-    const updateStatusDb = async function (machine_id, status, audit_id) {
+const updateStatusDb = async function (machine_id, status, audit_id) {
     
     const query = `
         UPDATE machines
@@ -42,13 +42,35 @@ const getAllMachineWithAuditDuesDb = async function () {
 
         await pool.query(query3,[audit_id]);
     }
-    else if (status === 'CP' || status === 'TBR'){
+    else if (status === 'CP'){
         const query3 = `
             UPDATE audits
             SET assigned_to = 'none'
             WHERE id = $1
         `
 
+        const query4 = `
+            UPDATE machines
+            SET last_audit_date = now()
+            WHERE  name = $1
+        `
+
+        const query5 = `
+            UPDATE machines
+            SET audit_status = $2
+            WHERE name = $1
+        `
+        await pool.query(query3,[audit_id]);
+        await pool.query(query4, [machine_id]);
+        await pool.query(query5, [machine_id, 'NA'])
+    }
+
+    else if(status == 'TBR'){
+        const query3 = `
+            UPDATE audits
+            SET assigned_to = 'pawas'
+            WHERE id = $1
+        `
         await pool.query(query3,[audit_id]);
     }
 }
@@ -62,7 +84,14 @@ const getAllMachinesTBRDb = async function () {
 }
 
 const setAnalysisDataDb = async function (data) {
-    let table = (data.status == 'FT')? 'field_analysis': 'lab_analysis';
+    let table ;
+    if (data.status == 'FT'){
+        table = 'field_analysis';
+    }else if(data.status == 'LT'){
+        table = 'lab_analysis'
+    }else{
+        table = 'engg_analysis'
+    }
     const query = `
     INSERT INTO ${table} (
     audit_id,
@@ -73,12 +102,65 @@ const setAnalysisDataDb = async function (data) {
     assigned_to,
     assigned_by,
     status,
-    machine_type
+    machine_type,
+    is_health
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     `
 
-    return await pool.query(query, [data.audit_id, data.machine_id, data.tested_by, data.analysis_data, data.remark, data.assigned_to, data.assigned_by, data.status, data.machine_type])
+    return await pool.query(query, [data.audit_id, data.machine_id, data.tested_by, data.analysis_data, data.remark, data.assigned_to, data.assigned_by, data.status, data.machine_type, data.is_health])
+}
+
+const getFieldAnalysisDataDb = async function (data) {
+    const query = `
+        SELECT * FROM field_analysis
+        WHERE audit_id = $1
+    `
+    return await pool.query(query, [data.audit_id])
+}
+
+const createMachineDb = async function (data) {
+    const query = `
+        INSERT INTO machines (name, area, machine_type, audit_frequency, requires_lab_test, health_status, last_audit_date, audit_status)
+VALUES
+($1, $2, $3, $4, $5, $6, now(), 'NA')
+    `
+    return await pool.query(query,[data.name,data.area, data.machine_type, data.audit_frequency, data.requires_lab_test, 5]);
+}
+
+const getAnalysisDataDb = async function(){
+    const query = `
+        SELECT 
+    f.audit_id,
+    f.machine_id,
+	f.machine_type,
+
+    f.analysis_data AS field_analysis,
+    f.remark AS field_remark,
+
+    l.analysis_data AS lab_analysis,
+    l.remark AS lab_remark,
+
+    e.analysis_data AS engg_analysis,
+    e.remark AS engg_remark
+
+FROM field_analysis f
+LEFT JOIN lab_analysis l ON f.audit_id = l.audit_id
+LEFT JOIN engg_analysis e ON f.audit_id = e.audit_id
+
+GROUP BY 
+    f.audit_id, 
+    f.machine_id, 
+	f.machine_type,
+    f.analysis_data, 
+    f.remark, 
+    l.analysis_data, 
+    l.remark, 
+    e.analysis_data, 
+    e.remark
+    `
+
+    return await pool.query(query)
 }
 
 
@@ -87,6 +169,9 @@ export {
     getAllMachineWithAuditDuesDb,
     updateStatusDb,
     getAllMachinesTBRDb,
-    setAnalysisDataDb
+    setAnalysisDataDb,
+    getFieldAnalysisDataDb,
+    createMachineDb,
+    getAnalysisDataDb
 } 
     

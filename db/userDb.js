@@ -45,7 +45,7 @@ const createAuditDb = async function (machine_id, assigned_to, assigned_by) {
         WHERE name = $1
     `
 
-    await pool.query(query,[machine_id]);
+    await pool.query(query2,[machine_id]);
     
     return await pool.query(query, [machine_id, assigned_to, assigned_by]);
 
@@ -64,12 +64,20 @@ const getAuditForMachineDb = async function (machine_id) {
     return await pool.query(query, [machine_id]);
 }
 
+const getAssignedByFromAuditDb = async function (audit_id) {
+    const query = `select assigned_by from audits
+        where id = $1
+    `
+    return await pool.query(query,[audit_id])
+}
+
 export {
     getUser,
     getUserByRoleDb,
     createAuditDb,
     createUserDb,
     getAuditForMachineDb,
-    getAuditForUserDb
+    getAuditForUserDb,
+    getAssignedByFromAuditDb
 } 
     

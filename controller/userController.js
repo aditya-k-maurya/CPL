@@ -1,5 +1,6 @@
-import { getUser, getUserByRoleDb, createAuditDb, createUserDb, getAuditForMachineDb , getAuditForUserDb } from "../db/userDb.js";
+import { getUser, getUserByRoleDb, createAuditDb, createUserDb, getAuditForMachineDb, getAuditForUserDb } from "../db/userDb.js";
 import { getAllMachineDb, getAllMachineWithAuditDuesDb } from "../db/machineDb.js";
+import { createNotificationDb } from "../db/notificationDb.js";
 
 const signUp = async (req, res) => {
 	const { username, password, role } = req.body;
@@ -12,7 +13,7 @@ const signUp = async (req, res) => {
 		user = user.rows[0];
 
 		if (user) {
-			return res.status(400).json({ message: "username already exists exists" });
+			return res.status(400).json({ message: "Username already exists exists, please choose a different username" });
 		}
 
 		const response = await createUserDb(username, password, role);
@@ -23,6 +24,7 @@ const signUp = async (req, res) => {
 		user = await getUser(username);
 		user = user.rows[0];
 
+		await createNotificationDb(username, "Welcome! We congratulate you to become part of our orgainzation!");
 		const data = {
 			username: user.username,
 			password: user.password
@@ -89,12 +91,17 @@ const createAudit = async (req, res) => {
 	const { machine_id, assigned_to, assigned_by } = req.body;
 	try {
 		let isAudit = await getAuditForMachineDb(machine_id);
-		isAudit = isAudit?.rows[0];
-		if (isAudit) {
-			return res.status(200).json({ message: 'Audit already exists for the machine' });
+
+		if (isAudit.rowCount > 0) {
+			for (const audit of isAudit.rows) {
+				if (audit.status !== 'CP') {
+					return res.status(200).json({ message: 'Audit already exists for the machine' });
+				}
+			}
 		}
 
 		const response = await createAuditDb(machine_id, assigned_to, assigned_by);
+		await createNotificationDb(assigned_to, `You have been assigned a new audit by ${assigned_by} to machine ${machine_id}`)
 		if (!response) {
 			return res.status(500).json({ message: 'Unable to create audit' });
 		}
@@ -122,10 +129,51 @@ const getAudit = async (req, res) => {
 	}
 };
 
+const getDashboard = async (req, res) => {
+	try {
+		let allMachines = await getAllMachineDb();
+		let criticalMachines = allMachines.rows.filter(
+			(item) => item.health_status !== undefined && item.health_status < 3
+		);
+	
+		let safeIndex = allMachines.rows.length > 0
+			? 100 - ((criticalMachines.length / allMachines.rows.length) * 100)
+			: 100;
+		
+		const fieldTechnician = await getUserByRoleDb('FT');
+		const labTechnician = await getUserByRoleDb('LT')
+		const enggTechnician = await getUserByRoleDb('ET')
+
+		const totalTech = fieldTechnician.rowCount + labTechnician.rowCount + enggTechnician.rowCount;
+
+		let uniqueAreas = new Set(allMachines.rows.map(machine => machine.area));
+
+		let uniqueAreaCount = uniqueAreas.size;
+
+		let totalMachinesOnAudit = allMachines.rows.filter((item) => item.audit_status != 'NA')
+
+		let data = {
+			"inventory": allMachines.rowCount,
+			"criticalMachines": criticalMachines.length,
+			"safeIndex": safeIndex,
+			"availableTechnician": totalTech,
+			"totalSites": uniqueAreaCount,
+			"totalMachinesOnAudit": totalMachinesOnAudit.length
+		}
+
+		res.status(200).json(data)
+	} catch (error) {
+		console.log("Error in fetching dashboard", error);
+		res.status(500).json({message: "Error in fetching dashboard"});
+	}
+
+}
+
 export {
 	signUp,
 	login,
 	getUserByRole,
 	createAudit,
-	getAudit
+	getAudit,
+	getDashboard
 };
