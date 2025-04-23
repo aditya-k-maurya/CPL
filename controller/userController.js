@@ -1,5 +1,5 @@
-import { getUser, getUserByRoleDb, createAuditDb, createUserDb, getAuditForMachineDb, getAuditForUserDb } from "../db/userDb.js";
-import { getAllMachineDb, getAllMachineWithAuditDuesDb } from "../db/machineDb.js";
+import { getUser, getUserByRoleDb, createAuditDb, createUserDb, getAuditForMachineDb, getAuditForUserDb, getAllUsersDb } from "../db/userDb.js";
+import { getAllMachineDb } from "../db/machineDb.js";
 import { createNotificationDb } from "../db/notificationDb.js";
 
 const signUp = async (req, res) => {
@@ -37,11 +37,13 @@ const signUp = async (req, res) => {
 };
 
 const login = async (req, res) => {
-	const { username, password } = req.body;
+	const data = req.body;
 	try {
-		if (!username || !password) {
+		if (!data.username || !data.password) {
 			return res.status(400).json({ message: 'username and password is required!' });
 		}
+		let username = data.username;
+		let password = data.password;
 
 		let user = await getUser(username);
 
@@ -102,6 +104,7 @@ const createAudit = async (req, res) => {
 
 		const response = await createAuditDb(machine_id, assigned_to, assigned_by);
 		await createNotificationDb(assigned_to, `You have been assigned a new audit by ${assigned_by} to machine ${machine_id}`)
+		await createNotificationDb(assigned_to, `Machine ${machine_id} audit has been assigned to ${assigned_to}`)
 		if (!response) {
 			return res.status(500).json({ message: 'Unable to create audit' });
 		}
@@ -155,7 +158,7 @@ const getDashboard = async (req, res) => {
 		let data = {
 			"inventory": allMachines.rowCount,
 			"criticalMachines": criticalMachines.length,
-			"safeIndex": safeIndex,
+			"safeIndex": safeIndex.toFixed(2),
 			"availableTechnician": totalTech,
 			"totalSites": uniqueAreaCount,
 			"totalMachinesOnAudit": totalMachinesOnAudit.length
@@ -169,11 +172,37 @@ const getDashboard = async (req, res) => {
 
 }
 
+const getAllUsers = async (req, res) => {
+	try {
+		const response = await getAllUsersDb();
+		if(!response?.rowCount){
+			res.status(200).json({message:"No User present"});
+		}
+		const roleMap = {
+			'AD': 'Admin',
+			'SP': 'Supervisor',
+			'FT': 'Field Technician',
+			'LT': 'Lab Technician',
+			'ET': 'Engineer Technician',
+		}
+
+		const modifiedData = response.rows.map(user => ({
+			...user,
+			role: roleMap[user.role] || 'Field Technician', // fallback to abbreviation if not found
+		  }));
+		return res.status(200).json(modifiedData);
+	} catch (error) {
+		console.log('Error in fetching users', error);
+		res.status(500).json({message: "Error in fetching user"});
+	}
+}
+
 export {
 	signUp,
 	login,
 	getUserByRole,
 	createAudit,
 	getAudit,
-	getDashboard
+	getDashboard,
+	getAllUsers
 };

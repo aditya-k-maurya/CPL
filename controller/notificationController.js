@@ -1,4 +1,4 @@
-import { getNotificationsDb , markReadNotificationDb} from "../db/notificationDb.js";
+import { getNotificationsDb , markReadNotificationByIdDb, markReadNotificationDb} from "../db/notificationDb.js";
 
 const getNotifications = async function(req, res){
     const username = req.params.username;
@@ -13,9 +13,20 @@ const getNotifications = async function(req, res){
 }
 
 const markReadNotification = async function(req, res){
-    const username = req.params.username;
+    const data = req.body
     try {
-        await markReadNotificationDb(username);
+        await markReadNotificationDb(data.username);
+        res.status(200).json({message: "Notification updated successfully"});
+    } catch (error) {
+        console.log("Error in updating notification", error);
+        res.status(500).json({message: "Error in updating notification."})
+    }
+}
+
+const markReadNotificationById = async function(req, res){
+    const data = req.body;
+    try {
+        await markReadNotificationByIdDb(data.id);
         res.status(200).json({message: "Notification updated successfully"});
     } catch (error) {
         console.log("Error in updating notification", error);
@@ -25,5 +36,6 @@ const markReadNotification = async function(req, res){
 
 export {
     getNotifications,
-    markReadNotification
+    markReadNotification,
+    markReadNotificationById
 }

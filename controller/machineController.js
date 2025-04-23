@@ -1,4 +1,4 @@
-import { getAllMachineDb, getAllMachineWithAuditDuesDb,getAnalysisDataDb, updateStatusDb , getAllMachinesTBRDb, setAnalysisDataDb ,getFieldAnalysisDataDb, createMachineDb} from '../db/machineDb.js'
+import { getAllMachineDb, getAllMachineWithAuditDuesDb,getAnalysisDataDb,machineOnAuditDb, updateStatusDb , getAllMachinesTBRDb, setAnalysisDataDb ,getFieldAnalysisDataDb, createMachineDb} from '../db/machineDb.js'
 import { createNotificationDb } from '../db/notificationDb.js'
 
 
@@ -47,14 +47,16 @@ const getAllMachine = async (req, res) => {
     allMachines = allMachines.rows;
     machineWithDues = machineWithDues.rows;
 
-    let machineOnAudit = allMachines.filter((item) => item.audit_status != 'NA');
     machineWithDues = machineWithDues.filter((item) => item.audit_status =='NA');
+
+    let machineOnAudits = await machineOnAuditDb();
+    machineOnAudits = machineOnAudits?.rows.filter((item) => item.audit_status != 'NA')
 
 	response = {
     "machineTBR" : machineTBR,
 		"allMachines": allMachines,
 		"machineWithDues" : machineWithDues,
-    "machineOnAudit": machineOnAudit
+    "machineOnAudit": machineOnAudits
 	}
     res.status(200).json(response);
   } catch (error) {

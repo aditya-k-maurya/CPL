@@ -32,15 +32,30 @@ const updateStatusDb = async function (machine_id, status, audit_id) {
     await pool.query(query, [machine_id, status]);
     await pool.query(query2, [audit_id, status])
     
+    let lt = await pool.query(
+        `
+            select username from users
+            where role = 'LT'
+        `
+    )
+    lt = lt?.rows[0];
+
+    let et = await pool.query(
+        `
+            select username from users
+            where role = 'ET'
+        `
+    )
+    et = et?.rows[0];
 
     if(status=== 'LT'){
         const query3 = `
             UPDATE audits
-            SET assigned_to = 'toran'
+            SET assigned_to = $2
             WHERE id = $1
         `
 
-        await pool.query(query3,[audit_id]);
+        await pool.query(query3,[audit_id,lt.username]);
     }
     else if (status === 'CP'){
         const query3 = `
@@ -68,10 +83,10 @@ const updateStatusDb = async function (machine_id, status, audit_id) {
     else if(status == 'TBR'){
         const query3 = `
             UPDATE audits
-            SET assigned_to = 'pawas'
+            SET assigned_to = $2
             WHERE id = $1
         `
-        await pool.query(query3,[audit_id]);
+        await pool.query(query3,[audit_id,et.username]);
     }
 }
 const getAllMachinesTBRDb = async function () {
@@ -163,6 +178,15 @@ GROUP BY
     return await pool.query(query)
 }
 
+const machineOnAuditDb = async function() {
+    const query = `
+        select m.*, a.assigned_to  from 
+        audits as a 
+        join machines as m on a.machine_id = m.name
+    `
+    return await pool.query(query);
+}
+
 
 export {
     getAllMachineDb,
@@ -172,6 +196,7 @@ export {
     setAnalysisDataDb,
     getFieldAnalysisDataDb,
     createMachineDb,
-    getAnalysisDataDb
+    getAnalysisDataDb,
+    machineOnAuditDb
 } 
     

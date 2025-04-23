@@ -71,6 +71,14 @@ const getAssignedByFromAuditDb = async function (audit_id) {
     return await pool.query(query,[audit_id])
 }
 
+const getAllUsersDb = async function (){
+    const query = `
+        select * from users 
+    `
+
+    return await pool.query(query);
+}
+
 export {
     getUser,
     getUserByRoleDb,
@@ -78,6 +86,7 @@ export {
     createUserDb,
     getAuditForMachineDb,
     getAuditForUserDb,
-    getAssignedByFromAuditDb
+    getAssignedByFromAuditDb,
+    getAllUsersDb
 } 
     
